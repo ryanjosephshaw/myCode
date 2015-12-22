@@ -1,0 +1,21 @@
+@(Html.Kendo().Grid<Dashboard.Models.Logs>()
+    .Name("logGrid")
+    .Columns(columns =>
+    {
+        columns.Bound(p => p.Id).Width(100);
+        columns.Bound(p => p.Event_Type).Title("Event").Width(250);
+        columns.Bound(p => p.Event_Time).Title("Event Time").Format("{0:MM/dd/yy hh:mm:ss tt}").Width(140);
+        columns.Bound(p => p.Result).Width(100);
+        columns.Bound(p => p.User_Name).Title("User Name").Width(100);
+        columns.Bound(p => p.Log_Data).Title("Log Data");
+    })
+    .Scrollable()
+    .Resizable(resize => resize.Columns(true))
+    .AutoBind(true)
+    .HtmlAttributes(new { style = "height:430px;" })
+    .DataSource(dataSource => dataSource
+        .Ajax()
+        .Model(model => model.Id(p => p.Id))
+        .Read(read => read.Action("List_Data", "Home").Data("addSearchLog"))
+    )
+)
