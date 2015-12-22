@@ -1,0 +1,43 @@
+using System;
+using System.IO;
+using Aspose.Pdf;
+using System.Collections.Generic;
+using Aspose.Pdf.Facades;
+
+namespace AsposeUtilApp
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            String[] arguments = Environment.GetCommandLineArgs();
+            DirectoryInfo di = new DirectoryInfo(arguments[1]);
+            IEnumerable<FileInfo> fiArr = di.EnumerateFiles("*.pdf");
+
+            foreach (var fri in fiArr)
+            {
+                Document doc = new Document(fri.FullName);
+
+                DocumentPrivilege privilege = DocumentPrivilege.AllowAll;
+                privilege.AllowAssembly = false;
+                privilege.AllowCopy = false;
+                privilege.AllowFillIn = false;
+                privilege.AllowModifyContents = false;
+                privilege.AllowModifyAnnotations = false;
+
+                PdfFileSecurity fileSecurity = new PdfFileSecurity(doc);
+                fileSecurity.SetPrivilege(privilege);
+
+                doc.Encrypt("", "*922()229*", Permissions.PrintDocument, CryptoAlgorithm.RC4x128);
+
+                if (!Directory.Exists(fri.DirectoryName + "\\out\\"))
+                {
+                    Directory.CreateDirectory(fri.DirectoryName + "\\out\\");
+                }
+
+                doc.Save(fri.DirectoryName + "\\out\\" + fri.Name);
+                doc.Dispose();
+            }
+        }
+    }
+}
