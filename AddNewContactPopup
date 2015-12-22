@@ -1,0 +1,120 @@
+<div class="addNewContact container-fluid">
+    <form id="newContactForm">
+        <ul style="list-style-type: none;">
+            <li class="row">
+                <div class="col-sm-5">
+                    <label for="firstname" class="required">First Name</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("firstname")
+                    .HtmlAttributes(new { placeholder = "First Name", required = "required", validationmessage = "You must enter {0}", style = "width: 200px" })
+                    )
+                </div>
+                <div class="col-sm-5">
+                    <label for="lastname" class="required">Last Name</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("lastname")
+                    .HtmlAttributes(new { placeholder = "Last Name", required = "required", validationmessage = "you must enter {0}", style = "width:200px" })
+                    )
+                </div>
+            </li>
+            <li class="row">
+                <div class="col-sm-5">
+                    <label for="title" class="required">Title</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("title")
+                    .HtmlAttributes(new { placeholder = "Title", required = "required", validationmessage = "you must enter a {0}", style = "width:200px" })
+                    )
+                </div>
+                <div class="col-sm-5">
+                    <label for="type">Contact Type</label>
+                    @(Html.Kendo().DropDownList()
+                    .Name("type")
+                    .HtmlAttributes(new { required = "required", data_required_msg = "Select a contact type", style = "width: 200px" })
+                    .OptionLabel("Select Contact Type")
+                    .BindTo(new[] {
+                        new SelectListItem { Text="Main" },
+                        new SelectListItem { Text="CSR"},
+                        new SelectListItem { Text="Tech"}
+                    })
+                    )
+                </div>
+            </li>
+            <li class="row">
+                <div class="col-sm-5">
+                    <label for="phone" class="required">Phone Number</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("phone")
+                    .HtmlAttributes(new { placeholder = "Phone Number", required = "required", validationmessage = "You must enter a {0}", style = "width: 200px" })
+                    )
+                </div>
+                <div class="col-sm-5">
+                    <label for="email" class="required">Email</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("email")
+                    .HtmlAttributes(new { placeholder = "Email", required = "required", validationmessage = "you must enter an {0}", style = "width:200px" })
+                    )
+                </div>
+            </li>
+            <li class="row">
+                <div class="col-sm-5">
+                    <label for="address1" class="required">Address Line 1</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("address1")
+                    .HtmlAttributes(new { placeholder = "Address Line 1", required = "required", validationmessage = "You must enter an {0}", style = "width: 200px" })
+                    )
+                </div>
+                <div class="col-sm-5">
+                    <label for="address2">Address Line 2</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("address2")
+                    .HtmlAttributes(new { placeholder = "Address Line 2", style = "width:200px" })
+                    )
+                </div>
+            </li>
+            <li class="row">
+                <div class="col-sm-3">
+                    <label for="city" class="required">City</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("city")
+                    .HtmlAttributes(new { placeholder = "City", required = "required", validationmessage = "You must enter a {0}", style = "width: 175px" })
+                    )
+                </div>
+                <div class="col-sm-3">
+                    <label for="state" class="required">State</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("state")
+                    .HtmlAttributes(new { placeholder = "State", required = "required", validationmessage = "You must enter a {0}", style = "width:75px" })
+                    )
+                </div>
+                <div class="col-sm-3">
+                    <label for="zip" class="required">Zip</label>
+                    @(Html.Kendo().TextBox()
+                    .Name("zip")
+                    .HtmlAttributes(new { placeholder = "Zip", required = "required", validationmessage = "You must enter a {0}", style = "width:100px" })
+                    )
+                </div>
+            </li>
+            <li style="position:absolute; bottom:0; right:0; margin: 10px;">
+                <button class="k-button close-button" type="button">Cancel</button>
+                <button class="k-button" type="submit">Save</button>
+            </li>
+        </ul>
+    </form>
+</div>
+
+<script>
+    $(function () {
+        var validator = $("#newContactForm").kendoValidator().data("kendoValidator");
+
+        $("form").submit(function (event) {
+            event.preventDefault();
+            if (validator.validate()) {
+            } else {
+            }
+        });
+    });
+
+    $(".close-button").click(function () {
+        $(this).closest("[data-role=window]").kendoWindow("close");
+    });
+</script>
