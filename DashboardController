@@ -1,0 +1,416 @@
+using Dashboard.Models;
+using Kendo.Mvc.UI;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using Kendo.Mvc.Extensions;
+
+namespace Dashboard.Controllers
+{
+    public class HomeController : Controller
+    {
+        private Entities db = new Entities();
+
+        public ActionResult Distributors()
+        {
+            ViewBag.User_Role = User.Identity.Name;
+            return View();
+        }
+
+        public ActionResult Applications()
+        {
+            ViewBag.User_Role = User.Identity.Name;
+            return View();
+        }
+
+        public ActionResult Customers()
+        {
+            ViewBag.User_Role = User.Identity.Name;
+            return View();
+        }
+
+        public ActionResult Dashboard()
+        {
+            ViewBag.User_Role = User.Identity.Name;
+            return View();
+        }
+
+        public ActionResult RunLog()
+        {
+            return PartialView("RunLog", null);
+        }
+
+        public ActionResult GetSearchResultRun([DataSourceRequest]DataSourceRequest request, string searcharg, string day, string status)
+        {
+            List<Runs> runs = new List<Runs>();
+
+            var number = 0;
+
+            int.TryParse(searcharg, out number);
+
+            DateTime? startRunDate = null;
+
+            if (day == "")
+            {
+                day = "";
+            }
+            else
+            {
+                startRunDate = DateTime.Today.AddDays(Convert.ToInt32(day) * -1);
+            }
+
+            runs = (from r in db.Runs
+                    join s in db.Statuses on r.Status equals s.Name into rses
+                    from rs in rses.DefaultIfEmpty()
+                    join a in db.Applications on r.Application_Id equals a.Id
+                    join d in db.Distributors on a.Distributor_Id equals d.Id
+                    join c in db.Customers on a.Customer_Id equals c.Id
+                    where (
+                            searcharg == "" && day == "" && status == ""
+                            &&
+                            (
+                                r.Create_Date >= DateTime.Today
+                            )
+                          )
+                          ||
+                          (
+                            searcharg != "" && day != "" && status != ""
+                            &
+                            (
+                                (
+                                    r.Create_Date >= startRunDate
+                                ) 
+                                &&
+                                (
+                                    r.Id == number ||
+                                    r.Mailshop_Job_Id.Contains(searcharg) ||
+                                    a.Name.Contains(searcharg) ||
+                                    d.Name.Contains(searcharg) ||
+                                    c.Name.Contains(searcharg) 
+                                )
+                                &&
+                                (
+                                    r.Status.Equals(status)
+                                )
+                            )
+                          )
+                          ||
+                          (
+                            searcharg != "" && day == "" && status == ""
+                            &
+                            (
+                                r.Id == number ||
+                                r.Mailshop_Job_Id.Contains(searcharg) ||
+                                a.Name.Contains(searcharg) ||
+                                d.Name.Contains(searcharg) ||
+                                c.Name.Contains(searcharg) ||
+                                r.Status.Contains(searcharg)
+                            )
+                          )
+                          ||
+                          (
+                            searcharg == "" && day != "" && status == ""
+                            &
+                            (
+                                r.Create_Date >= startRunDate
+                            ) 
+                          )
+                          ||
+                          (
+                            searcharg == "" && day == "" && status != ""
+                            &
+                            (
+                                r.Status.Equals(status)
+                            )
+                          )
+                          ||
+                          (
+                            searcharg != "" && day != "" && status == ""
+                            &
+                            (
+                                (
+                                    r.Create_Date >= startRunDate
+                                )
+                                &&
+                                (
+                                    r.Id == number ||
+                                    r.Mailshop_Job_Id.Contains(searcharg) ||
+                                    a.Name.Contains(searcharg) ||
+                                    d.Name.Contains(searcharg) ||
+                                    c.Name.Contains(searcharg) ||
+                                    r.Status.Contains(searcharg)
+                                )
+                            )
+                          )
+                          ||
+                          (
+                            searcharg == "" && day != "" && status != ""
+                            &
+                            (
+                                (
+                                    r.Create_Date >= startRunDate
+                                )
+                                &&
+                                (
+                                    r.Status.Equals(status)
+                                )
+                            )
+                          )
+                          ||
+                          (
+                            searcharg != "" && day == "" && status != ""
+                            &
+                            (
+                                (
+                                    r.Id == number ||
+                                    r.Mailshop_Job_Id.Contains(searcharg) ||
+                                    a.Name.Contains(searcharg) ||
+                                    d.Name.Contains(searcharg) ||
+                                    c.Name.Contains(searcharg)
+                                )
+                                &&
+                                (
+                                    r.Status.Equals(status)
+                                )
+                            )
+                          )
+                    select new Runs()
+                    {
+                        Id = r.Id,
+                        Mailshop_Job_Id = r.Mailshop_Job_Id,
+                        Application_Id = r.Application_Id,
+                        Application_Name = a.Name,
+                        Distributor_Name = d.Name,
+                        Customer_Name = c.Name,
+                        Status = r.Status,
+                        Start_Time = r.Start_Time,
+                        End_Time = r.End_Time,
+                        Print_Start_Time = r.Print_Start_Time,
+                        Insert_Start_Time = r.Insert_Start_Time,
+                        Ship_Time = r.Ship_Time,
+                        Notes = r.Notes
+                    })
+                    .OrderByDescending(r => r.Id)
+                    .ToList();
+
+            var jsonResult = Json(runs.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+            jsonResult.MaxJsonLength = int.MaxValue;
+            return jsonResult;
+        }
+
+        public ActionResult RunStatusList()
+        {
+            List<SelectListItem> runstatuses = new List<SelectListItem>();
+
+            runstatuses = db.Statuses
+                            .Where(s => s.Object == "Runs")
+                            .Select(d => new SelectListItem
+                            {
+                                Value = d.Id.ToString(),
+                                Text = d.Name
+                            })
+                            .OrderBy(d => d.Text)
+                            .ToList();
+            runstatuses.Add(new SelectListItem { Value = "Mailshop Ids", Text = "Mailshop Ids" });
+
+            return Json(runstatuses, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult GetSearchResultFiles([DataSourceRequest]DataSourceRequest request, string searcharg, string day)
+        {
+            List<Files> files = new List<Files>();
+
+            var number = 0;
+
+            bool isNumber = int.TryParse(searcharg, out number);
+            // if search argument is not a number, set the value to -99 so empty files will not match. 
+            // TryParse will set number to 0 (zero) if the search argument is not a number.
+            if (!isNumber) { number = -99; }
+
+            DateTime? startRunDate = null;
+
+            if (day == "" && searcharg == "")
+            {
+                day = "";
+            }
+            else if (day == "" && searcharg != "")
+            {
+                startRunDate = DateTime.Today.AddDays(Convert.ToInt32(3) * -1);
+            }
+            else
+            {
+                startRunDate = DateTime.Today.AddDays(Convert.ToInt32(day) * -1);
+            }
+
+            files = (from i in db.Incoming_Files
+                     where (
+                                searcharg == "" && day == ""
+                                &&
+                                (
+                                    i.Date_Recv >= DateTime.Today
+                                )
+                            )
+                            ||
+                            (
+                                searcharg != "" && day == ""
+                                &
+                                (
+                                    (
+                                        i.Date_Recv >= startRunDate
+                                    )
+                                    && 
+                                    (
+                                        i.File_Name.Contains(searcharg) ||
+                                        i.File_Path.Contains(searcharg) ||
+                                        i.File_Size == number ||
+                                        i.MD5.Contains(searcharg) ||
+                                        i.Status.Contains(searcharg) ||
+                                        i.Customer_Name.Contains(searcharg) ||
+                                        i.App_Name.Contains(searcharg) ||
+                                        i.Errors.Contains(searcharg)
+                                    )
+                                    
+                                )
+                            )
+                            ||
+                            (
+                                searcharg == "" && day != ""
+                                &&
+                                (
+                                    i.Date_Recv >= startRunDate
+                                )
+                            )
+                            ||
+                            (
+                                searcharg != "" && day != ""
+                                &
+                                (
+                                    (
+                                        i.Date_Recv >= startRunDate
+                                    )
+                                    &&
+                                    (
+                                        i.File_Name.Contains(searcharg) ||
+                                        i.File_Path.Contains(searcharg) ||
+                                        i.File_Size == number ||
+                                        i.MD5.Contains(searcharg) ||
+                                        i.Status.Contains(searcharg) ||
+                                        i.Customer_Name.Contains(searcharg) ||
+                                        i.App_Name.Contains(searcharg) ||
+                                        i.Errors.Contains(searcharg)
+                                    )
+                                )
+                            )
+                     select new Files()
+                     {
+                         Id = i.ID,
+                         File_Path = i.File_Path,
+                         File_Name = i.File_Name,
+                         Date_Received = i.Date_Recv,
+                         File_Size = i.File_Size,
+                         MD5 = i.MD5,
+                         Status = i.Status,
+                         Customer_Name = i.Customer_Name,
+                         Application_Name = i.App_Name,
+                         Errors = i.Errors
+                     }).OrderByDescending(i => i.Date_Received).ToList();
+
+            var jsonResult = Json(files.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+            jsonResult.MaxJsonLength = int.MaxValue;
+            return jsonResult;
+                        
+        }
+
+        public ActionResult GetSearchResultsDist([DataSourceRequest]DataSourceRequest request, string searcharg)
+        {
+            List<Distributors> dist = new List<Distributors>();
+
+            dist = (from d in db.Distributors
+                    where d.Name.Contains(searcharg)
+                    select new Distributors()
+                    {
+                        Id = d.Id,
+                        Name = d.Name,
+                        Status = d.Status,
+                        Modify_User = d.Modify_User,
+                        Modify_Date = d.Modify_Date
+                    }).ToList();
+
+            return Json(dist.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult GetSearchResultsApp([DataSourceRequest]DataSourceRequest request, string searcharg)
+        {
+            List<Applications> app = new List<Applications>();
+
+            app = (from a in db.Applications
+                    where a.Name.Contains(searcharg) && a.Status != "Retired"
+                    select new Applications()
+                    {
+                        Id = a.Id,
+                        Name = a.Name,
+                        Status = a.Status,
+                        Modify_User = a.Modify_User,
+                        Modify_Date = a.Modify_Date
+                    }).ToList();
+
+            return Json(app.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+        }
+
+        public void saveAppChanges(Applications apps)
+        {
+            var a = db.Applications.Where(app => app.Id == apps.Id).SingleOrDefault();
+            if (a != null)
+            {
+                a.Status = apps.Status;
+                db.SaveChanges();
+            }
+        }
+
+        public ActionResult GetSearchResultsCust([DataSourceRequest]DataSourceRequest request, string searcharg)
+        {
+            List<Customers> cust = new List<Customers>();
+
+            cust = (from c in db.Customers
+                   where c.Name.Contains(searcharg)
+                   select new Customers()
+                   {
+                       Id = c.Id,
+                       Name = c.Name,
+                       Status = c.Status,
+                       Modify_User = c.Modify_User,
+                       Modify_Date = c.Modify_Date
+                   }).ToList();
+
+            return Json(cust.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+        }
+     
+        public ActionResult List_Data([DataSourceRequest]DataSourceRequest request, string searcharg)
+        {
+            List<Logs> logs = new List<Logs>();
+
+            var number = 0;
+
+            int.TryParse(searcharg, out number);
+
+            logs = (from l in db.Logs
+                    where l.Run_Id == number
+                    select new Logs()
+                    {
+                        Id = l.Id,
+                        User_Name = l.User_Name,
+                        Event_Type = l.Event_Type,
+                        Event_Time = l.Event_Time,
+                        Result = l.Result,
+                        Run_Id = l.Run_Id,
+                        Log_Data = l.Log_Data
+                    })
+                    .OrderByDescending(l => l.Event_Time)
+                    .ToList();
+
+            return Json(logs.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+        }
+    }
+}
