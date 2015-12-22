@@ -1,0 +1,51 @@
+<div class="addContactsDiv">
+    @(Html.Kendo().ListView<ContactManagement.Models.Contact>()
+        .Name("AddContactList")
+        .TagName("div")
+        .ClientTemplateId("addContactTemplate")
+        .DataSource(dataSource => dataSource
+            .Read(read => read.Action("Get_Contacts", "Home"))
+        )
+        .Selectable(selectable => selectable.Mode(ListViewSelectionMode.Multiple))
+    )
+</div>
+
+<div id="newcontactpopup"></div>
+
+<button type="button" style="position:absolute; bottom:0; right:0; margin:20px;" class="k-button">Save</button>
+<button type="button" style="position: absolute; bottom:0; left:0; margin: 20px;" class="k-button" onclick=addNewContact()><span class="fa fa-plus"></span></button>
+
+<script type="text/x-kendo-tmpl" id="addContactTemplate">
+    <div class="contact">
+        <div class="contact-wrapper">
+            <img style="display:inline-block; padding: 8px;" src="@Url.Content("~/Images/AnonymousUser.png")" />
+            <dl class="contact-details" style="display: inline-block">
+                <dt class="name" style="text-align: left; margin-left: 10px;">${First_Name} ${Last_Name}</dt>
+                <dd class="type" style="text-align: left; margin-left: 10px;">${Type}</dd>
+            </dl>
+        </div>
+    </div>
+</script>
+
+<script>
+    $(document).ready(function () {
+        $("#newcontactpopup").kendoWindow({
+            action: ["Close"],
+            draggable: true,
+            modal: true,
+            height: "500px",
+            title: "Add New Contact",
+            visible: false,
+            width: "50%",
+        }).data("kendoWindow")
+    });
+
+    function addNewContact() {
+        var win = $("#newcontactpopup").data("kendoWindow");
+        win.refresh({
+            url: '@Url.Action("Add_New_Contact", "Home")',
+        });
+        win.center();
+        win.open();
+    }
+</script>
