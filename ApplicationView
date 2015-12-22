@@ -1,0 +1,149 @@
+@{
+    ViewBag.Title = "Applications";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div id="main-section-header" class="row">
+    <h2 id="applications" class="col-xs-3">Applications</h2>
+    <h2 class="user">User : @ViewBag.User_Role</h2>    
+    <div style="clear:both;"></div>
+</div>
+
+<div id="main-section">
+    <div id="application-data" style="height:88%">
+        @(Html.Kendo().Grid<Dashboard.Models.Applications>()
+                .Name("appGrid")
+                .Selectable(selectable => selectable
+                    .Mode(GridSelectionMode.Multiple))
+                .Scrollable()
+                .Events(events => events.Change("onChange"))
+                .Columns(columns =>
+                {
+                    columns.Bound(app => app.Id);
+                    columns.Bound(app => app.Name);
+                    columns.Bound(app => app.Status);
+                    columns.Bound(app => app.Modify_User).Title("Modify User");
+                    columns.Bound(app => app.Modify_Date).Title("Modify Date").Format("{0:MM/dd/yyyy hh:mm tt}");
+                })
+                .DataSource(dataSource => dataSource
+                    .Ajax()
+                    .Create(create => create.Action("saveAppChanges", "Home"))
+                    .Read(read => read.Action("GetSearchResultsApp", "Home").Data("addData"))
+                    .Update(update => update.Action("saveAppChanges", "Home"))
+                    .Destroy(destroy => destroy.Action("GetSearchResultsApp", "Home"))
+                    .Sort(sort => 
+                    {
+                        sort.Add(app => app.Status).Descending();
+                        sort.Add(app => app.Name);
+                    })
+                )
+        )
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#main-section-header').insertBefore('#toolbar-container');
+
+        $("#day").remove();
+        $("#days").remove();
+
+        $("#status").remove();
+        $("#runStatus").remove();
+
+        var search = $("#searcharg");
+        search.on("keyup", function () {
+            $("#appGrid").data("kendoGrid").dataSource.read();
+        });
+    })
+
+    function placeHold() {
+        if ($(".k-button").html("Put On Hold")) {
+            $(".k-button").remove();
+        }
+        var grid = $("#appGrid").data("kendoGrid");
+        var row = grid.select();
+        row.each(function () {
+            var selectedItem = $('#appGrid').data().kendoGrid.dataSource.data()[$(this).index()];
+            if (selectedItem["Status"] = "Active") {
+                selectedItem["Status"] = "Hold";
+            }
+        });
+        grid.dataSource.sync();
+        grid.dataSource.read();
+    }
+
+    function placeActive() {
+        if ($(".k-button").html("Take off Hold")) {
+            $(".k-button").remove();
+        }
+        var grid = $("#appGrid").data("kendoGrid");
+        var row = grid.select();
+        row.each(function () {
+            var selectedItem = $('#appGrid').data().kendoGrid.dataSource.data()[$(this).index()];
+            if (selectedItem["Status"] = "Hold") {
+                selectedItem["Status"] = "Active";
+            }
+        });
+        grid.dataSource.sync();
+        grid.dataSource.read();
+    }
+
+    function addData() {
+        return { searcharg: $("#searcharg").val() };
+    }
+
+    function onChange(arg) {
+        $("#searcharg").blur();
+        var grid = $("#appGrid").data("kendoGrid");
+        var row = [grid.select()];
+        var rows = grid.select();
+        var toolbar = $("#Toolbar").data("kendoToolBar");
+        if ($(".k-button").html("Put On Hold")) {
+            $(".k-button").remove();
+        }
+        if (row.every(sameStatusActive)) {
+            toolbar.add({
+                type: "button",
+                text: "Put On Hold",
+                click: placeHold
+            });
+        } else {
+            var correctRows = true;
+            rows.each(function (index, ro) {
+                var otherItems = grid.dataItem(ro);
+                if (otherItems.Status == "Active") {
+                    correctRows = false;
+                }
+            });
+            if (correctRows == true) {
+                toolbar.add({
+                    type: "button",
+                    text: "Take off Hold",
+                    click: placeActive
+                });
+            } else {
+                alert("Please select only applications of the same Status");
+            }
+        }
+    }
+
+    function sameStatusActive(element, index, array) {
+        var grid = $("#appGrid").data("kendoGrid");
+        var selectedItem = grid.dataItem(element);
+        return selectedItem.Status == "Active";
+    }
+
+    $(window).resize(function () {
+        var gridElement = $("#appGrid"),
+            newHeight = gridElement.innerHeight(),
+            otherElements = gridElement.children().not(".k-grid-content"),
+            otherElementsHeight = 7;
+
+        otherElements.each(function () {
+            otherElementsHeight += $(this).outerHeight();
+        });
+
+        gridElement.children(".k-grid-content").height(newHeight - otherElementsHeight);
+    });
+</script>
