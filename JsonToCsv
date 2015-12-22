@@ -1,0 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.IO;
+using Newtonsoft.Json.Linq;
+
+namespace JsonFileToCsvFile
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            String[] arguments = Environment.GetCommandLineArgs();
+            DirectoryInfo di = new DirectoryInfo(arguments[1]);
+            IEnumerable<FileInfo> fiarr = di.EnumerateFiles("*.json");
+
+            foreach (var fri in fiarr)
+            {
+                JArray a = JArray.Parse(File.ReadAllText(fri.FullName));
+
+                var csv = new StringBuilder();
+
+                foreach (JObject o in a.Children<JObject>())
+                {
+                    string id = (string)o.GetValue("id");
+                    string wid = (string)o.GetValue("wid");
+                    string name = (string)o.GetValue("name");
+                    string at = (string)o.GetValue("at");
+
+                    if (name.Contains(","))
+                    {
+                        name = String.Format("\"{0}\"", name);
+                    }
+
+                    csv.AppendLine(id + "," + wid + "," + name + "," + at);
+                }
+
+                File.WriteAllText(fri.FullName + ".csv", csv.ToString());
+
+            }            
+        }
+    }
+}
