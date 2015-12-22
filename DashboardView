@@ -1,0 +1,256 @@
+@{
+    ViewBag.Title = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div id="main-section-header" class="row">
+    <h2 id="dashboard" class="col-xs-3">Dashboard</h2>
+    <h2 class="user">User : @ViewBag.User_Role</h2>
+    <div style="clear:both;"></div>
+</div>
+
+<div id="main-section">
+
+    <div id="dashboardTab">
+        @(Html.Kendo().TabStrip()
+              .Name("dashboardTabstrip")
+              .Events(events => events
+                .Select("onTabStripSelect")
+              )
+              .Items(tabstrip =>
+              {
+                  tabstrip.Add().Text("Runs")
+                      .Selected(true)
+                      .Content(@<text>
+                                @RenderRunGrid()
+                               </text>);
+                  tabstrip.Add().Text("Incoming Files")
+                      .Content(@<text>
+                                @RenderFilesGrid()
+                               </text>);
+              })
+    )
+    </div>
+
+    <div id="runGridDiv">
+        @helper RenderRunGrid()
+        {
+                @(Html.Kendo().ContextMenu()
+                    .Name("runpopup")
+                    .Target("#runGrid")
+                    .Filter("tr")
+                    .Orientation(ContextMenuOrientation.Horizontal)
+                    .Animation(animation =>
+                        {
+                            animation.Open(open =>
+                            {
+                                open.Fade(FadeDirection.In);
+                                open.Duration(10);
+                            });
+                        })
+                    .Items(items =>
+                    {
+                        items.Add().Text("Display Log");
+                    })
+                    .Events(e => e.Select("openrunlog"))
+                )
+
+                @(Html.Kendo().Grid<Dashboard.Models.Runs>()
+                    .Name("runGrid")
+                    .Scrollable()
+                    .Selectable()
+                    .Events(events => events.Change("onChange"))
+                    .Columns(columns => 
+                    {
+                        columns.Bound(r => r.Id).Hidden(true);
+                        columns.Bound(r => r.Mailshop_Job_Id).Title("Mailshop Id");
+                        columns.Bound(r => r.Distributor_Name).Title("Distributor");
+                        columns.Bound(r => r.Customer_Name).Title("Customer");
+                        columns.Bound(r => r.Application_Name).Title("Application");
+                        columns.Bound(r => r.Status);
+                        columns.Bound(r => r.Start_Time).Title("Start").Format("{0:MM/dd/yyyy hh:mm tt}");
+                        columns.Bound(r => r.End_Time).Title("End").Format("{0:MM/dd/yyyy hh:mm tt}");
+                        columns.Bound(r => r.Print_Start_Time).Format("{0:MM/dd/yyyy hh:mm tt}");
+                        columns.Bound(r => r.Notes);
+                    })
+                    .DataSource(dataSource => dataSource
+                        .Ajax()
+                        .Read(read => read.Action("GetSearchResultRun", "Home").Data("addData"))
+                        .ServerOperation(true)
+                    )
+                )
+                <input id="selectedStatus" type="hidden" />
+        }
+
+        <div id="logpopup"></div>
+    </div>
+
+    <div id="filesGridDiv">
+        @helper RenderFilesGrid() 
+        { 
+            @(Html.Kendo().Grid<Dashboard.Models.Files>()
+                .Name("filesGrid")
+                .Scrollable()
+                .Selectable()
+                .Columns(columns => 
+                {
+                    columns.Bound(f => f.Id).Hidden(true);
+                    columns.Bound(f => f.File_Path).Title("File Path");
+                    columns.Bound(f => f.File_Name).Title("File Name");
+                    columns.Bound(f => f.Date_Received).Title("Date Received").Format("{0:MM/dd/yyyy hh:mm tt}");
+                    columns.Bound(f => f.MD5);
+                    columns.Bound(f => f.File_Size).Title("File Size(bytes)");
+                    columns.Bound(f => f.Customer_Name).Title("Customer Name");
+                    columns.Bound(f => f.Application_Name).Title("Application Name");
+                    columns.Bound(f => f.Errors);
+                })
+                .DataSource(dataSource => dataSource
+                    .Ajax()
+                    .Read(read => read.Action("GetSearchResultFiles", "Home").Data("addFileData"))
+                    .ServerOperation(true)
+                )
+            )        
+        }
+
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var search = $("#searcharg");
+
+        search.on("keyup", function () {
+            $("#runGrid").data("kendoGrid").dataSource.read();
+        });
+
+        search.on("keyup", function () {
+            $("#filesGrid").data("kendoGrid").dataSource.read();
+        });
+
+        var day = $("#day");
+        day.on("keyup", function () {
+            $("#runGrid").data("kendoGrid").dataSource.read();
+        });
+
+        day.on("keyup", function () {
+            $("#filesGrid").data("kendoGrid").dataSource.read();
+        });
+
+        $("#runStatus").kendoDropDownList({
+            optionLabel: "All",
+            dataTextField: "Text",
+            dataValueField: "Value",
+            dataSource: { transport: { read: { datatype: "jsonp", url: '@Url.Action("RunStatusList", "Home")' } } },
+            select: runGridStatus
+        })
+
+        $("#logpopup").kendoWindow({
+            action: ["Close"],
+            draggable: true,
+            modal: true,
+            height: "450px",
+            title: "Log records for Run",
+            visible: false,
+            width: "50%",
+        }).data("kendoWindow")
+    });
+
+    function onTabStripSelect(e) {
+        if ($(e.item).find("> .k-link").text() == "Incoming Files")
+        {
+            $("#search").show();
+            $("#searcharg").show();
+            $("#days").show();
+            $("#day").show();
+            $("#status").hide();
+            $(".k-dropdown").hide();
+            $(".k-button").remove();
+        }
+        else if ($(e.item).find("> .k-link").text() == "Runs")
+        {
+            $("#search").show();
+            $("#searcharg").show();
+            $("#days").show();
+            $("#day").show();
+            $("#status").show();
+            $(".k-dropdown").show();
+            $(".k-button").remove();
+        }
+    }
+
+    function runGridStatus(e) {
+
+        var status = e.item.text();
+
+        if (status == 'All') {
+            $('#selectedStatus').val('');
+        }
+        else {
+            $('#selectedStatus').val(status);
+        }
+        $("#runGrid").data("kendoGrid").dataSource.read();
+    }
+
+    var timer = setInterval(refresh, 60000);
+
+    function refresh() {
+        $("#runGrid").data("kendoGrid").dataSource.read();
+    }
+
+    function addData() {
+        return { searcharg: $("#searcharg").val(), day: $("#day").val(), status: $("#selectedStatus").val() };
+    }
+
+    function addFileData() {
+        return { searcharg: $("#searcharg").val(), day: $("#day").val() };
+    }
+
+    function addSearchLog() {
+        return { searcharg: $('#searcharg').val(), searcharg: currentRunId };
+    }
+
+    function openrunlog(e) {
+
+        currentRunId = e.target.firstChild.innerText;
+
+        var win = $("#logpopup").data("kendoWindow");
+        win.refresh({
+            url: '@Url.Action("RunLog", "Home")',
+        });
+        win.title("Log records for Run Id " + currentRunId);
+        win.center();
+        win.open();
+    }
+
+    function openRunLogButton() {
+        var grid = $("#runGrid").data("kendoGrid");
+        var selectedItem = grid.dataItem(grid.select());
+
+        if (selectedItem == null) {
+            alert("Please select a run");
+        } else {
+            currentRunId = selectedItem.Id;
+            var win = $("#logpopup").data("kendoWindow");
+            win.refresh({
+                url: '@Url.Action("RunLog", "Home")',
+            });
+            win.title("Log records for Run Id " + currentRunId);
+            win.center();
+            win.open();
+        }
+    }
+
+    function onChange(arg) {
+        var grid = $("#runGrid").data("kendoGrid");
+        var selectedItem = grid.dataItem(grid.select());
+        var toolbar = $("#Toolbar").data("kendoToolBar");
+        if ($(".k-button").html("Display Log")) {
+            $(".k-button").remove();
+        }
+        toolbar.add({
+            type: "button",
+            text: "Display Log",
+            click: openRunLogButton
+        })
+    }
+</script>
