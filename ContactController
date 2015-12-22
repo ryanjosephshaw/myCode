@@ -1,0 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using Kendo.Mvc.Extensions;
+using ContactManagement.Models;
+using Kendo.Mvc.UI;
+
+namespace ContactManagement.Controllers
+{
+    public class HomeController : Controller
+    {
+        public ActionResult Index()
+        {
+            return View();
+        }
+
+        public ActionResult Get_Contacts([DataSourceRequest]DataSourceRequest request) 
+        {
+            var contacts = new WI20DevEntities().Contacts;
+
+            DataSourceResult result = contacts.ToDataSourceResult(request);
+
+            return Json(result);
+        }
+
+        public ActionResult Add_Contacts()
+        {
+            return PartialView("Add_Contacts", null);
+        }
+
+        public ActionResult Add_New_Contact()
+        {
+            return PartialView("Add_New_Contact", null);
+        }
+
+        public ActionResult Edit_Contact()
+        {
+            return PartialView("Edit_Contact", null);
+        }
+    }
+}
