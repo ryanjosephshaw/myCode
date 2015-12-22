@@ -1,0 +1,97 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+<div class="contact-management">
+    <div class="contact-header" style="border-style: solid; border-width: thin; border-color: #cccccc;">
+        <h3 style="display:inline-block;">Contacts</h3>
+        <button type="button" style="display: inline-block;" class="k-button" id="addContact" onclick=addContactList()><span class="fa fa-plus"></span></button>
+    </div>
+    @(Html.Kendo().ListView<ContactManagement.Models.Contact>()
+        .Name("ContactManager")
+        .TagName("div")
+        .ClientTemplateId("template")
+        .DataSource(dataSource => dataSource
+            .Read(read => read.Action("Get_Contacts", "Home"))
+        )
+        .Selectable()
+    )
+</div>
+
+<div id="contactpopup"></div>
+<div id="editcontactpopup"></div>
+
+<script type="text/x-kendo-tmpl" id="template">
+    <div class="contact">
+        <div class="contact-wrapper">
+            <img style="display:inline-block; padding: 8px;" src="@Url.Content("~/Images/AnonymousUser.png")" />
+            <dl class="contact-details" style="display: inline-block; margin: 5%;">
+                <dt class="name" style="text-align: left; margin-left: 10px;">${First_Name} ${Last_Name}</dt>
+                <dd class="type" style="text-align: left; margin-left: 10px;">${Type}</dd>
+            </dl>
+            <button type="button" class="k-button" id="editContact" style="position: absolute; right:0; margin-right: 50px; margin-top: 30px;" onclick=editContact()><span class="fa fa-pencil-square-o"></span></button>
+            <button type="button" class="k-button" id="deleteContact" style="position: absolute; right:0; margin-right: 5px; margin-top: 30px;" onclick=deleteContact()><span class="fa fa-trash"></span></button>
+        </div>
+    </div>
+</script>
+
+<script>
+    $(document).ready(function () {
+        $("#contactpopup").kendoWindow({
+            action: ["Close"],
+            draggable: true,
+            modal: true,
+            height: "500px",
+            title: "Add Contacts",
+            visible: false,
+            width: "50%",
+        }).data("kendoWindow");
+
+        $("#editcontactpopup").kendoWindow({
+            action: ["Close"],
+            deaggable: true,
+            modal: true,
+            height: "500px",
+            title: "Edit Contact",
+            visible: false,
+            width: "50%",
+        }).data("kendoWindow");
+    });
+
+    function addContactList() {
+        var win = $("#contactpopup").data("kendoWindow");
+        win.refresh({
+            url: '@Url.Action("Add_Contacts", "Home")',
+        });
+        win.center();
+        win.open();
+    }
+
+    function editContact() {
+        var win = $("#editcontactpopup").data("kendoWindow");
+        win.refresh({
+            url: '@Url.Action("Edit_Contact", "Home")',
+        });
+        win.center();
+        win.open();
+    }
+
+    function deleteContact() {
+        var list = $("#ContactManager").data("kendoListView");
+        var index = list.select().index();
+        var dataItem = list.dataSource.view()[index];
+        console.log(dataItem.First_Name);
+    }
+
+    $(window).resize(function () {
+        var list = $("ContactManager"),
+            newHeight = list.innerHeight(),
+            otherElements = list.children(),
+            otherElementsHeight = 0;
+
+        otherElements.each(function () {
+            otherElementsHeight += $(this).outerHeight();
+        });
+
+        list.children().height(newHeight - otherElementsHeight);
+    });
+</script>
+
