@@ -1,0 +1,117 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+
+namespace ZipFiles
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            String[] arguments = Environment.GetCommandLineArgs();
+            DirectoryInfo di = new DirectoryInfo(arguments[1]);
+            IEnumerable<DirectoryInfo> dir = di.EnumerateDirectories();
+            //Get all directories
+            foreach(DirectoryInfo item in dir) {
+                IEnumerable<FileInfo> fiArr = item.EnumerateFiles();
+                //Get all files in directory
+                foreach (FileInfo file in fiArr)
+                {
+                    DateTime today = DateTime.Today;
+                    if (today.DayOfWeek == DayOfWeek.Monday)
+                    {
+                        today = DateTime.Today.AddDays(-4);
+                    }
+                    else if (today.DayOfWeek == DayOfWeek.Tuesday)
+                    {
+                        today = DateTime.Today.AddDays(-3);
+                    }
+                    else
+                    {
+                        today = DateTime.Today.AddDays(-2);
+                    }
+
+                    //Only if the file was modified two weekdays ago
+                    if (file.LastWriteTime <= today)
+                    {
+                        var date = file.LastWriteTime.ToString("MM-dd-yyyy");
+
+                        if (!Directory.Exists(file.DirectoryName + "\\" + date + "\\"))
+                        {                           
+                            var path = Directory.CreateDirectory(file.DirectoryName + "\\" + date + "\\");
+                            file.CopyTo(file.DirectoryName + "\\" + date + "\\" + file.Name);
+                        }
+                        else
+                        {
+                            file.CopyTo(file.DirectoryName + "\\" + date + "\\" + file.Name);
+                        }
+                    }
+                }
+            }
+
+            foreach (DirectoryInfo item in dir)
+            {
+                IEnumerable<DirectoryInfo> dir2 = item.EnumerateDirectories();
+                foreach (DirectoryInfo dir3 in dir2)
+                {
+                    string name = dir3.Name;
+                    string sourceName = dir3.FullName + "\\*.*";
+                    string targetName = dir3.FullName + "\\" + item + name + ".zip";
+                    
+
+                    ProcessStartInfo p = new ProcessStartInfo();
+                    p.FileName = "7z.exe";
+
+                    p.Arguments = "a \"" + targetName + "\" " + sourceName + " -mx=9";
+                    p.WindowStyle = ProcessWindowStyle.Hidden;
+
+                    Process x = Process.Start(p);
+                    x.WaitForExit();
+
+
+                    if (!Directory.Exists(item.Name + "\\Backup\\" + name))
+                    {
+                        var path = Directory.CreateDirectory(item.Name + "\\Backup\\" + name);
+                        File.Copy(targetName, path.FullName + "\\" + item + name + ".zip");
+                    }
+                    else
+                    {
+                        File.Copy(targetName, item.Name + "\\Backup\\" + name + "\\" + item + name + ".zip");
+                    }
+
+                    File.Move(targetName, dir3.FullName + "\\" + item + name + ".zip.wi");
+
+                    ProcessStartInfo a = new ProcessStartInfo();
+                    a.FileName = "AsposeUtilApp.exe";
+
+                    a.Arguments = dir3.FullName;
+
+                    Process y = Process.Start(a);
+                    y.WaitForExit();
+
+                    string sourceName2 = dir3.FullName + "\\out\\*.*";
+
+                    ProcessStartInfo b = new ProcessStartInfo();
+                    b.FileName = "7z.exe";
+
+                    b.Arguments = "a \"" + targetName + "\" " + sourceName2 + " -mx=9";
+                    b.WindowStyle = ProcessWindowStyle.Hidden;
+
+                    Process z = Process.Start(b);
+                    z.WaitForExit();
+
+                    if (!Directory.Exists("item.Name + "\\Out\\"))
+                    {
+                        var path = Directory.CreateDirectory("item.Name + "\\Out\\");
+                        File.Copy(targetName, path.FullName + "\\" + name + ".zip");
+                    }
+                    else
+                    {
+                        File.Copy(targetName, item.Name + "\\Out\\" + name + ".zip");
+                    }
+                }
+            }           
+        }
+    }
+}
